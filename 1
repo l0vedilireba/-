@@ -1,0 +1,1590 @@
+package com.demo.controller;
+import com.demo.mapper.CgweekupreportDetectMapper;
+import com.demo.mapper.DutypersonMapper;
+import com.demo.mapper.ZwFhzmbhejiMapper;
+import com.demo.model.CellContent;
+import com.demo.model.DutyInfo;
+import com.demo.model.sum;
+import com.demo.service.DatesService;
+import com.demo.service.convertPDF;
+import com.demo.util.FileUtilTool;
+import com.demo.util.ReportUtil;
+import com.demo.util.UtilTool;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.*;
+import java.lang.*;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.net.UnknownHostException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.stream.Collectors;
+/**
+ * <p>
+ * 前端控制器
+ * </p>
+ *
+ * Excel 生成,没有对应的reportconfigid
+ *
+ * @author ch
+ * @since 2022-05-08
+ */
+@Slf4j
+@RestController
+@RequestMapping("/dutyperson")
+@Api(value = "DutypersonController", tags = {"EXCEL接口"})
+public class DutypersonController {
+    @Autowired
+    DutypersonMapper dutypersonMapper;
+    @Autowired
+    ZwFhzmbhejiMapper zwFhzmbhejiMapper;
+    @Autowired
+    CgweekupreportDetectMapper cgweekupreportDetectMapper;
+
+    DatesService datesService = new DatesService();
+    //获取日常值班表单元格内容
+    List<List<CellContent>> getDatarichang(String[] t1) {
+        String[] times = t1;
+        List<List<CellContent>> excelList = new ArrayList<>();
+
+        for (String timeStr : times) {
+            List<DutyInfo> list = dutypersonMapper.getInfo(timeStr);//用sql将每天情况,分别查询一遍(一般7天查7次,优化空间不大)
+
+            List<CellContent> listContent = list.stream().map(o -> {
+                String text = o.getPersonname() + "(" + o.getJob() + ")" + "\r\n" + o.getCellphone()
+                        + "/" + o.getPosttel();//拼接单元格内容
+                //String sortStr = o.getSort().substring(1);
+                String sortStr = o.getSort();//获取sort字段
+                CellContent content = CellContent.builder().sort(sortStr).content(text).build();
+                return content;
+            }).collect(Collectors.toList());
+            excelList.add(listContent);
+        }
+        return excelList;
+    }
+
+    //获取疫情表单元格内容
+    //获取jqzzzbbb单元格内容
+    List<List<CellContent>> getDatajiaqiang(String[] t1) {
+        String[] times = t1;
+        List<List<CellContent>> excelList = new ArrayList<>();
+
+        for (String timeStr : times) {
+            List<DutyInfo> list = dutypersonMapper.getInfo(timeStr);
+
+            List<CellContent> listContent = list.stream().map(o -> {
+                String text = o.getPersonname() + "\r\n" + o.getCellphone() +
+                        "\r\n" + o.getPosttel();//拼接单元格内容
+                //String sortStr = o.getSort().substring(1);
+                String sortStr = o.getSort();//获取sort字段
+                CellContent content = CellContent.builder().sort(sortStr).content(text).build();
+                return content;
+            }).collect(Collectors.toList());
+            excelList.add(listContent);
+        }
+        return excelList;
+    }
+    //获取618单元格内容
+    List<List<CellContent>> excelList1 = new ArrayList<>();//值班ld
+    List<List<CellContent>> excelList2 = new ArrayList<>();//座机号码和手机
+    void getData922(String[] t1) {
+        String[] times = t1;
+        excelList1.clear();
+        excelList2.clear();
+        for (String timeStr : times) {
+            List<DutyInfo> list = dutypersonMapper.getInfo(timeStr);
+
+            List<CellContent> listContent = list.stream().map(o -> {
+                String text = o.getPersonname();
+
+                //String sortStr = o.getSort().substring(1);
+                String sortStr = o.getSort();//获取sort字段
+                CellContent content = CellContent.builder().sort(sortStr).content(text).build();
+                return content;
+            }).collect(Collectors.toList());
+            excelList1.add(listContent);
+        }
+            for (String timeStr1 : times) {
+                List<DutyInfo> list1 = dutypersonMapper.getInfo(timeStr1);
+
+                List<CellContent> listContent1 = list1.stream().map(o -> {
+                    String text = o.getCellphone() +
+                            "\r\n" + o.getPosttel();//拼接单元格内容
+                    //String sortStr = o.getSort().substring(1);
+                    String sortStr = o.getSort();//获取sort字段
+                    CellContent content = CellContent.builder().sort(sortStr).content(text).build();
+                    return content;
+                }).collect(Collectors.toList());
+                excelList2.add(listContent1);
+        }
+    }
+    //获取信通信值班表单元格内容
+    List<List<CellContent>> getDataxintong(String[] t1) {
+        String[] times = t1;
+        List<List<CellContent>> excelList = new ArrayList<>();
+
+        for (String timeStr : times) {
+            List<DutyInfo> list = dutypersonMapper.getInfo1(timeStr);
+
+            List<CellContent> listContent = list.stream().map(o -> {
+                String text = o.getPersonname()  + "\r\n" + o.getCellphone()
+                        + "/" + o.getPosttel();//拼接单元格内容
+                //String sortStr = o.getSort().substring(1);
+                String sortStr = o.getSort();//获取sort字段
+                CellContent content = CellContent.builder().sort(sortStr).content(text).build();
+                return content;
+            }).collect(Collectors.toList());
+            excelList.add(listContent);
+        }
+        return excelList;
+    }
+
+    //比对字段，查找放入位置
+    String searchContent(List<CellContent> list, String sort) {
+        for (CellContent e : list) {
+            if (e != null && e.getSort()!=null &&  e.getSort().equals(sort))
+                return e.getContent();
+        }
+        return null;
+    }
+    //比对字段，查找插入位置，疫情单独用
+
+    String searchContentEpic(List<sum> list, String org_code) {
+        for (sum e : list) {
+            if (e != null && e.getOrg_code()!=null && e.getOrg_code().equals(org_code))
+                return e.getCount();
+        }
+        return null;
+    }
+    //TODO 优化1
+    @GetMapping("/excel")
+    @ApiOperation(value = "日常值班本公司掌握")
+    public String generateRiChangExcel(  String startTime, String endTime) throws IOException, ParseException {
+        ArrayList<String> dates = datesService.GetDates(startTime, endTime);
+        int size = dates.size();
+        String[] t1 = dates.toArray(new String[size]);
+        dutypersonMapper.deleteInfo();
+        //"已删除旧表jieguo1,jieguo2"
+        dutypersonMapper.updateInfo1();
+        dutypersonMapper.updateInfo2();
+        for(int i = 0;i<size;i++){
+            dutypersonMapper.updateInfo3(t1[i]);
+        }
+        List<List<CellContent>> excelList = getDatarichang(t1);
+        String sort = "A1002";
+        for (int i = 0; i < t1.length; i++)
+        {
+            CellContent cellContent= new CellContent();
+                String jobclass = zwFhzmbhejiMapper.getcirichu(t1[i]);
+                if(excelList.get(i).get(1).getSort().equals("A1002")){
+                    jobclass = excelList.get(i).get(1).getContent().replaceAll("\\(.*?\\)","("+jobclass+"处长)");
+                    cellContent.setContent(jobclass);
+                    cellContent.setSort("A1002");
+                    excelList.get(i).set(1,cellContent);
+                    continue;
+            }
+        }
+        XSSFWorkbook workbook = null;
+        XSSFCellStyle style = null;
+        XSSFCellStyle style1 = null;
+        XSSFCellStyle style2 = null;
+        XSSFCellStyle style3 = null;
+        try {
+            long Time = System.currentTimeMillis();
+            workbook = new XSSFWorkbook("./src/main/resources/templates/excel/richangzhanbeizhiban.xlsx");
+            System.out.println("打开文件time==" + (System.currentTimeMillis() - Time));
+            XSSFFont font =workbook.createFont();
+            font.setFontName("方正小标宋简体");
+            font.setFontHeightInPoints((short)24);
+            XSSFFont font1 =workbook.createFont();
+            font1.setFontName("宋体");
+            font1.setFontHeightInPoints((short)14);
+            //font.setBold(true);
+            style = workbook.createCellStyle(); // 创建单元格样式
+            style1 = workbook.createCellStyle();
+            style2 = workbook.createCellStyle();
+            style3 = workbook.createCellStyle();
+            style2.setFont(font);
+            style1.setWrapText(true);  // 单元格内容折行
+            style1.setVerticalAlignment(VerticalAlignment.CENTER);
+            style1.setBorderBottom(BorderStyle.THIN);
+            style1.setBorderLeft(BorderStyle.THIN);
+            style1.setBorderRight(BorderStyle.THIN);
+            style1.setBorderTop(BorderStyle.THIN);
+            style3.setAlignment(HorizontalAlignment.CENTER);
+            style3.setVerticalAlignment(VerticalAlignment.CENTER);
+            style3.setVerticalAlignment(VerticalAlignment.CENTER);
+            style3.setBorderBottom(BorderStyle.THIN);
+            style3.setBorderLeft(BorderStyle.THIN);
+            style3.setBorderRight(BorderStyle.THIN);
+            style3.setBorderTop(BorderStyle.THIN);
+            style3.setFont(font1);
+            style2.setWrapText(true);  // 单元格内容折行
+            style2.setAlignment(HorizontalAlignment.CENTER);
+            style2.setVerticalAlignment(VerticalAlignment.CENTER);
+            style.setWrapText(true);  // 单元格内容折行
+            style.setAlignment(HorizontalAlignment.CENTER);
+            style.setVerticalAlignment(VerticalAlignment.CENTER);
+            style.setBorderBottom(BorderStyle.THIN);
+            style.setBorderLeft(BorderStyle.THIN);
+            style.setBorderRight(BorderStyle.THIN);
+            style.setBorderTop(BorderStyle.THIN);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        XSSFSheet sheet = workbook.getSheetAt(0);
+        int j = 2;
+        int n = 6;
+        int k = 0;
+        List<String> existList = new ArrayList<>();
+        for (List<CellContent> childList : excelList) {
+            Row row = sheet.getRow(j);
+            while (row != null) {
+                Cell referCell = row.getCell(k);
+                referCell.setCellType(CellType.STRING);
+                if (referCell == null) {
+                    continue;
+                }
+                String reference = referCell.getStringCellValue();
+                String content = this.searchContent(childList, reference);
+                if (content == null) {
+                    j++;
+                    row = sheet.getRow(j);
+                    continue;
+                }
+                Cell cell = row.createCell(n);
+                cell.setCellStyle(style);
+                cell.setCellValue(content);
+                existList.add(reference);
+                j++;
+                row = sheet.getRow(j);
+            }
+            n++;
+            j = 2;
+        }
+//删除参照列
+        Row row1 = sheet.getRow(j);
+        while (row1 != null) {
+            Cell tempCell = row1.getCell(k);
+            row1.removeCell(tempCell);
+            j++;
+            row1 = sheet.getRow(j);
+        }
+        int hangshu = j;
+        //更改模板前两个日期行
+        j = 1;
+        n = 6;
+        int i = 0;
+        Row row2 = sheet.getRow(j);
+        String writedate = null;
+        while (i < t1.length) {
+            Cell tmpCell = row2.getCell(n);
+            if(tmpCell==null){
+                tmpCell = row2.createCell(n);
+            }
+            try {
+                writedate = datesService.getYearMonthDayWeeken(t1[i]);
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+            tmpCell.setCellValue(writedate);
+            tmpCell.setCellStyle(style);
+            i++;
+            n++;
+        }
+        //首行
+        Row row3 = sheet.getRow(0);
+        Cell tmpCell = row3.getCell(2);
+        String startDate = "";
+        String endDate = "";
+        try {
+             startDate = datesService.getYearMonthDay(t1[0]);
+             endDate = datesService.getYearMonthDay(t1[t1.length - 1]);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        if (tmpCell == null) {
+            Cell cell = row3.createCell(2);
+            cell.setCellValue("第一公司值班联系电话 " + "\r\n" + "(" + t1[0] + "至" + t1[t1.length - 1] + ")");
+        } else
+            tmpCell.setCellValue("第一公司值班联系电话 " + "\r\n"+ startDate + "至" + endDate);
+
+       // 少于七天复制最后一列到最后一天，删除多余列
+        j=1;
+        k=dates.size()+6;
+        int lastlie = 1;
+        Row row4 = sheet.getRow(j);
+            while(row4!=null){
+                Cell tempCell = row4.getCell(lastlie);
+                Cell tmpCell1 = row4.createCell(k);
+                tmpCell1.setCellStyle(style);
+                tmpCell1.setCellValue(tempCell.getStringCellValue());
+                j++;
+                row4 = sheet.getRow(j);
+        }
+            //小于七天删除多余列
+        if(dates.size()<7) {
+            for (k = dates.size() + 7; k < 14; k++) {
+
+                j = 1;
+                row4 = sheet.getRow(j);
+                while (row4 != null) {
+                    Cell tempCell = row4.getCell(k);
+                    row4.removeCell(tempCell);
+                    j++;
+                    row4 = sheet.getRow(j);
+                }
+            }
+        }
+        //大于七天设置字体大小
+        if(dates.size()>7) {
+            int m = 13;
+            row1 = sheet.getRow(1);
+            Cell tmpCellfont = row1.getCell(13);
+            while(tmpCellfont != null){
+                tmpCellfont = row1.getCell(m);
+                XSSFFont font = workbook.createFont();
+                font.setFontHeightInPoints((short)14);
+                m++;
+            }
+            for(m = 13; m < dates.size()+6;m++){
+               for(k = 1; k<hangshu; k++) {
+                   row1 = sheet.getRow(k);
+                   tmpCellfont = row1.getCell(m);
+                   if (tmpCellfont != null) {
+                       tmpCellfont.setCellStyle(style);
+                   } else {
+                       tmpCellfont = row1.createCell(m);
+                       tmpCellfont.setCellStyle(style);
+                   }
+               }
+            }
+        }
+        //合并第一行和最后一行
+        j=2;
+        k=dates.size()+6;
+        //第一行
+        CellRangeAddress cra = new CellRangeAddress(0,0,j,k);
+        sheet.addMergedRegion(cra);
+        row1 = sheet.getRow(0);
+        tmpCell = row1.getCell(j);
+        tmpCell.setCellStyle(style2);
+
+        //最后一行
+        j=2;
+        CellRangeAddress cra1 = new CellRangeAddress(hangshu-1,hangshu-1,j,k);
+        row1 = sheet.getRow(hangshu-1);
+        sheet.addMergedRegion(cra1);
+        for(j=2;j<k;j++){
+        tmpCell = row1.getCell(j);
+        tmpCell.setCellStyle(style1);
+    }
+
+        //第二行
+        row1 = sheet.getRow(1);
+
+        int size2 =dates.size()+6;
+        for(j=2;j<size2;j++){
+            Cell tmpcell2 = row1.getCell(j);
+            tmpcell2.setCellStyle(style3);
+        }
+//删除第二列
+        j=1;
+        k=1;
+        Row row5 = sheet.getRow(j);
+        while (row5 != null) {
+            Cell tempCell = row5.getCell(k);
+            row5.removeCell(tempCell);
+            j++;
+            row5 = sheet.getRow(j);
+        }
+
+
+        SimpleDateFormat f = new SimpleDateFormat("yyyy年MM月dd日HH时mm分");
+        String format = f.format(new Date());
+        String newFilename = "第一公司值班联系电话" + format + ".xlsx";
+        //日常值班本公司掌握
+        //String filepath = FileUtilTool.CreateFileName(newFilename);
+        String filepath= ReportUtil.GetInnerPostPath(ReportUtil.DutyPostEnum.日常值班,endTime)
+                + newFilename;
+        OutputStream outputStream = new FileOutputStream(filepath);
+        workbook.write(outputStream);
+        String filepathpdf = filepath.replaceAll(".xlsx",".pdf");
+        convertPDF convertPDF = new convertPDF();
+        convertPDF.jacobExcelToPDF(filepath,filepathpdf);
+        outputStream.flush();
+        outputStream.close();
+        return filepath ;// filepathpdf;
+    }
+    @GetMapping("/excel1")
+    @ApiOperation(value = "上报总公司值班表")
+    public String generateshangbaoExcel( String typeName, String startTime, String endTime) throws IOException, ParseException {
+        ArrayList<String> dates = datesService.GetDates(startTime, endTime);
+        int size = dates.size();
+        String[] t1 = dates.toArray(new String[size]);
+        dutypersonMapper.deleteInfo();
+        System.out.println("已删除旧表jieguo1,jieguo2");
+        dutypersonMapper.updateInfo1();
+        dutypersonMapper.updateInfo2();
+        for(int i = 0;i<size;i++){
+            dutypersonMapper.updateInfo3(t1[i]);
+        }
+
+        List<List<CellContent>> excelList = getDatarichang(t1);
+        XSSFWorkbook workbooksb = null;
+        XSSFCellStyle style = null;
+        XSSFCellStyle style1 = null;
+        XSSFCellStyle style2 = null;
+        XSSFCellStyle style3 = null;
+        try {
+            workbooksb = new XSSFWorkbook("./src/main/resources/templates/excel/上报总公司-第一公司值班联系电话表.xlsx");
+            XSSFFont font =workbooksb.createFont();
+            font.setFontName("方正小标宋简体");
+            font.setFontHeightInPoints((short)24);
+
+            XSSFFont font1 =workbooksb.createFont();
+            font1.setFontName("宋体");
+            font1.setFontHeightInPoints((short)14);
+            //font.setBold(true);
+            style = workbooksb.createCellStyle(); // 创建单元格样式
+            style1 = workbooksb.createCellStyle();
+            style2 = workbooksb.createCellStyle();
+            style3 = workbooksb.createCellStyle();
+            style2.setFont(font);
+            style1.setWrapText(true);  // 单元格内容折行
+            style1.setVerticalAlignment(VerticalAlignment.CENTER);
+            style1.setBorderBottom(BorderStyle.THIN);
+            style1.setBorderLeft(BorderStyle.THIN);
+            style1.setBorderRight(BorderStyle.THIN);
+            style1.setBorderTop(BorderStyle.THIN);
+            style3.setAlignment(HorizontalAlignment.CENTER);
+            style3.setVerticalAlignment(VerticalAlignment.CENTER);
+            style3.setVerticalAlignment(VerticalAlignment.CENTER);
+            style3.setBorderBottom(BorderStyle.THIN);
+            style3.setBorderLeft(BorderStyle.THIN);
+            style3.setBorderRight(BorderStyle.THIN);
+            style3.setBorderTop(BorderStyle.THIN);
+            style3.setFont(font1);
+            style2.setWrapText(true);  // 单元格内容折行
+            style2.setAlignment(HorizontalAlignment.CENTER);
+            style2.setVerticalAlignment(VerticalAlignment.CENTER);
+            style.setWrapText(true);  // 单元格内容折行
+            style.setAlignment(HorizontalAlignment.CENTER);
+            style.setVerticalAlignment(VerticalAlignment.CENTER);
+            style.setBorderBottom(BorderStyle.THIN);
+            style.setBorderLeft(BorderStyle.THIN);
+            style.setBorderRight(BorderStyle.THIN);
+            style.setBorderTop(BorderStyle.THIN);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        XSSFSheet sheet = workbooksb.getSheetAt(0);
+        int j = 2;
+        int n = 6;
+        int k = 0;
+        List<String> existList = new ArrayList<>();
+        for (List<CellContent> childList : excelList) {
+            Row row = sheet.getRow(j);
+
+            while (row != null&&j<32) {
+                Cell referCell = row.getCell(k);
+                referCell.setCellType(CellType.STRING);
+                if (referCell == null) {
+                    continue;
+                }
+                String reference = referCell.getStringCellValue();
+                String content = this.searchContent(childList, reference);
+                if (content == null) {
+                    j++;
+                    row = sheet.getRow(j);
+                    continue;
+                }
+                Cell cell = row.createCell(n);
+                cell.setCellStyle(style);
+                cell.setCellValue(content);
+                existList.add(reference);
+                j++;
+                row = sheet.getRow(j);
+            }
+            n++;
+            j = 2;
+        }
+        //删除参照列
+        Row row1 = sheet.getRow(j);
+        while (row1 != null&&j<32) {
+            Cell tempCell = row1.getCell(k);
+            row1.removeCell(tempCell);
+            j++;
+            row1 = sheet.getRow(j);
+        }
+        int hangshu = j;
+        //更改模板前两个日期行
+        j = 1;
+        n = 6;
+        int i = 0;
+        Row row2 = sheet.getRow(j);
+        String writedate = null;
+        while (i < t1.length) {
+            Cell tmpCell = row2.getCell(n);
+            if(tmpCell==null){
+                tmpCell = row2.createCell(n);
+            }
+            try {
+                writedate = datesService.getYearMonthDayWeeken(t1[i]);
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+            tmpCell.setCellValue(writedate);
+            tmpCell.setCellStyle(style);
+            i++;
+            n++;
+        }
+        //首行
+        Row row3 = sheet.getRow(0);
+        Cell tmpCell = row3.getCell(2);
+        if (tmpCell == null) {
+            Cell cell = row3.createCell(2);
+            cell.setCellValue("第一公司值班联系电话 " + "\r\n" + "(" + t1[0] + "至" + t1[t1.length - 1] + ")");
+        } else
+            tmpCell.setCellValue("第一公司值班联系电话 " + "\r\n" + "(" + t1[0] + "至" + t1[t1.length - 1] + ")");
+
+        // 少于七天复制第二列到最后一列，删除多余列
+        j=1;
+        k=dates.size()+6;
+        int lastlie = 1;
+         while(row4!=null&&j<hangshu){
+            Cell tempCell = row4.getCell(lastlie);
+            Cell tmpCell1 = row4.createCell(k);
+            tmpCell1.setCellStyle(style);
+            tmpCell1.setCellValue(tempCell.getStringCellValue());
+            j++;
+            row4 = sheet.getRow(j);
+        }
+        //小于七天删除多余列
+        if(dates.size()<7) {
+            for (k = dates.size() + 7; k < 14; k++) {
+
+                j = 1;
+                row4 = sheet.getRow(j);
+                while (row4 != null) {
+                    Cell tempCell = row4.getCell(k);
+                    row4.removeCell(tempCell);
+                    j++;
+                    row4 = sheet.getRow(j);
+                }
+            }
+        }
+        //大于七天设置字体大小
+        if(dates.size()>7) {
+            int m = 13;
+            row1 = sheet.getRow(1);
+            Cell tmpCellfont = row1.getCell(13);
+            while(tmpCellfont != null){
+                tmpCellfont = row1.getCell(m);
+                XSSFFont font = workbooksb.createFont();
+                font.setFontHeightInPoints((short)14);
+                m++;
+            }
+            for(m = 13; m < dates.size()+6;m++){
+                for(k = 1; k<hangshu; k++) {
+                    row1 = sheet.getRow(k);
+                    tmpCellfont = row1.getCell(m);
+                    if (tmpCellfont != null) {
+                        tmpCellfont.setCellStyle(style);
+                    } else {
+                        tmpCellfont = row1.createCell(m);
+                        tmpCellfont.setCellStyle(style);
+                    }
+                }
+            }
+        }
+        //合并第一行和最后一行
+        j=2;
+        k=dates.size()+6;
+        //第一行
+        CellRangeAddress cra = new CellRangeAddress(0,0,j,k);
+        sheet.addMergedRegion(cra);
+        row1 = sheet.getRow(0);
+        tmpCell = row1.getCell(j);
+        tmpCell.setCellStyle(style2);
+        //最后一行
+        j=2;
+        k=dates.size()+6;
+        CellRangeAddress cra1 = new CellRangeAddress(hangshu-1,hangshu-1,j,k);
+        row1 = sheet.getRow(hangshu-1);
+        sheet.addMergedRegion(cra1);
+        for(j=2;j<k;j++){
+            tmpCell = row1.getCell(j);
+            tmpCell.setCellStyle(style1);
+        }
+        //删除第二列
+        j=1;
+        k=1;
+        Row row5 = sheet.getRow(j);
+        while (row5 != null) {
+            Cell tempCell = row5.getCell(k);
+            row5.removeCell(tempCell);
+            j++;
+            row5 = sheet.getRow(j);
+        }
+        SimpleDateFormat f = new SimpleDateFormat("yyyy年MM月dd日HH时mm分");
+        String format = f.format(new Date());
+        String newFilename = "上报总公司-第一公司值班联系电话表" + format + ".xlsx";
+        //上报总公司值班
+        String filepath=ReportUtil.GetInnerPostPath(ReportUtil.DutyPostEnum.日常值班,endTime)
+                + newFilename;
+        OutputStream outputStream = new FileOutputStream(filepath);
+        workbooksb.write(outputStream);
+        String filepathpdf = filepath.replaceAll(".xlsx",".pdf");
+        convertPDF convertPDF = new convertPDF();
+        convertPDF.jacobExcelToPDF(filepath,filepathpdf);
+        outputStream.flush();
+        outputStream.close();
+        return filepath;// filepathpdf;
+    }
+    @GetMapping("/excel7")
+    @ApiOperation(value = "日常值班表粘贴板")
+    public String generatezhantieExcel( String typeName, String startTime, String endTime) throws IOException, ParseException {
+        ArrayList<String> dates = datesService.GetDates(startTime, endTime);
+        int size = dates.size();
+        String[] t1 = dates.toArray(new String[size]);
+        dutypersonMapper.deleteInfo();
+        System.out.println("已删除旧表jieguo1,jieguo2");
+        dutypersonMapper.updateInfo1();
+        dutypersonMapper.updateInfo2();
+        for(int i = 0;i<size;i++){
+            dutypersonMapper.updateInfo3(t1[i]);
+        }
+        List<List<CellContent>> excelList = getDatarichang(t1);
+        XSSFWorkbook workbooksb = null;
+        XSSFCellStyle style = null;
+        XSSFCellStyle style1 = null;
+        XSSFCellStyle style2 = null;
+        XSSFCellStyle style3 = null;
+        try {
+            workbooksb = new XSSFWorkbook("./src/main/resources/templates/excel/粘贴板.xlsx");
+            XSSFFont font =workbooksb.createFont();
+            font.setFontName("方正小标宋简体");
+            font.setFontHeightInPoints((short)24);
+            XSSFFont font1 =workbooksb.createFont();
+            font1.setFontName("宋体");
+            font1.setFontHeightInPoints((short)14);
+            //font.setBold(true);
+            style = workbooksb.createCellStyle(); // 创建单元格样式
+            style1 = workbooksb.createCellStyle();
+            style2 = workbooksb.createCellStyle();
+            style3 = workbooksb.createCellStyle();
+            style2.setFont(font);
+            style1.setWrapText(true);  // 单元格内容折行
+            style1.setVerticalAlignment(VerticalAlignment.CENTER);
+            style1.setBorderBottom(BorderStyle.THIN);
+            style1.setBorderLeft(BorderStyle.THIN);
+            style1.setBorderRight(BorderStyle.THIN);
+            style1.setBorderTop(BorderStyle.THIN);
+            style3.setAlignment(HorizontalAlignment.CENTER);
+            style3.setVerticalAlignment(VerticalAlignment.CENTER);
+            style3.setVerticalAlignment(VerticalAlignment.CENTER);
+            style3.setBorderBottom(BorderStyle.THIN);
+            style3.setBorderLeft(BorderStyle.THIN);
+            style3.setBorderRight(BorderStyle.THIN);
+            style3.setBorderTop(BorderStyle.THIN);
+            style3.setFont(font1);
+            style2.setWrapText(true);  // 单元格内容折行
+            style2.setAlignment(HorizontalAlignment.CENTER);
+            style2.setVerticalAlignment(VerticalAlignment.CENTER);
+            style.setWrapText(true);  // 单元格内容折行
+            style.setAlignment(HorizontalAlignment.CENTER);
+            style.setVerticalAlignment(VerticalAlignment.CENTER);
+            style.setBorderBottom(BorderStyle.THIN);
+            style.setBorderLeft(BorderStyle.THIN);
+            style.setBorderRight(BorderStyle.THIN);
+            style.setBorderTop(BorderStyle.THIN);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        XSSFSheet sheet = workbooksb.getSheetAt(0);
+        int j = 2;
+        int n = 6;
+        int k = 0;
+        List<String> existList = new ArrayList<>();
+        for (List<CellContent> childList : excelList) {
+            Row row = sheet.getRow(j);
+            while (row != null&&j<32) {
+                Cell referCell = row.getCell(k);
+                referCell.setCellType(CellType.STRING);
+                if (referCell == null) {
+                    continue;
+                }
+                String reference = referCell.getStringCellValue();
+                String content = this.searchContent(childList, reference);
+                if (content == null) {
+                    j++;
+                    row = sheet.getRow(j);
+                    continue;
+                }
+                Cell cell = row.createCell(n);
+                cell.setCellStyle(style);
+                cell.setCellValue(content);
+                existList.add(reference);
+                j++;
+                row = sheet.getRow(j);
+            }
+            n++;
+            j = 2;
+        }
+        //删除参照列
+        Row row1 = sheet.getRow(j);
+        while (row1 != null&&j<32) {
+            Cell tempCell = row1.getCell(k);
+            row1.removeCell(tempCell);
+            j++;
+            row1 = sheet.getRow(j);
+        }
+        int hangshu = j;
+        //更改模板前两个日期行
+        j = 1;
+        n = 6;
+        int i = 0;
+        Row row2 = sheet.getRow(j);
+        String writedate = null;
+        while (i < t1.length) {
+            Cell tmpCell = row2.getCell(n);
+            if(tmpCell==null){
+                tmpCell = row2.createCell(n);
+            }
+            try {
+                writedate = datesService.getYearMonthDayWeeken(t1[i]);
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+            tmpCell.setCellValue(writedate);
+            tmpCell.setCellStyle(style);
+            i++;
+            n++;
+        }
+        //首行
+        Row row3 = sheet.getRow(0);
+        Cell tmpCell = row3.getCell(2);
+        if (tmpCell == null) {
+            Cell cell = row3.createCell(2);
+            cell.setCellValue("第一公司值班联系电话表 " + "\r\n" + "(" + t1[0] + "至" + t1[t1.length - 1] + ")");
+        } else
+            tmpCell.setCellValue("第一公司值班联系电话表 " + "\r\n" + "(" + t1[0] + "至" + t1[t1.length - 1] + ")");
+        // 少于七天复制第二列到最后一列，删除多余列
+        j=1;
+        k=dates.size()+6;
+        int lastlie = 1;
+        Row row4 = sheet.getRow(j);
+        while(row4!=null&&j<hangshu){
+            Cell tempCell = row4.getCell(lastlie);
+            Cell tmpCell1 = row4.createCell(k);
+            tmpCell1.setCellStyle(style);
+            tmpCell1.setCellValue(tempCell.getStringCellValue());
+            j++;
+            row4 = sheet.getRow(j);
+        }
+        //小于七天删除多余列
+        if(dates.size()<7) {
+            for (k = dates.size() + 7; k < 14; k++) {
+
+                j = 1;
+                row4 = sheet.getRow(j);
+                while (row4 != null) {
+                    Cell tempCell = row4.getCell(k);
+                    row4.removeCell(tempCell);
+                    j++;
+                    row4 = sheet.getRow(j);
+                }
+            }
+        }
+        //大于七天设置字体大小
+        if(dates.size()>7) {
+            int m = 13;
+            row1 = sheet.getRow(1);
+            Cell tmpCellfont = row1.getCell(13);
+            while(tmpCellfont != null){
+                tmpCellfont = row1.getCell(m);
+                XSSFFont font = workbooksb.createFont();
+                font.setFontHeightInPoints((short)14);
+                m++;
+            }
+            for(m = 13; m < dates.size()+6;m++){
+                for(k = 1; k<hangshu; k++) {
+                    row1 = sheet.getRow(k);
+                    tmpCellfont = row1.getCell(m);
+                    if (tmpCellfont != null) {
+                        tmpCellfont.setCellStyle(style);
+                    } else {
+                        tmpCellfont = row1.createCell(m);
+                        tmpCellfont.setCellStyle(style);
+                    }
+                }
+            }
+        }
+
+        //合并第一行和最后一行
+        j=2;
+        k=dates.size()+6;
+        //第一行
+        CellRangeAddress cra = new CellRangeAddress(0,0,j,k);
+        sheet.addMergedRegion(cra);
+        row1 = sheet.getRow(0);
+        tmpCell = row1.getCell(j);
+        tmpCell.setCellStyle(style2);
+        //最后一行
+        j=2;
+        k=dates.size()+6;
+        CellRangeAddress cra1 = new CellRangeAddress(hangshu-1,hangshu-1,j,k);
+        row1 = sheet.getRow(hangshu-1);
+        sheet.addMergedRegion(cra1);
+        for(j=2;j<k;j++){
+            tmpCell = row1.getCell(j);
+            tmpCell.setCellStyle(style1);
+        }
+        //删除第二列
+        j=1;
+        k=1;
+        Row row5 = sheet.getRow(j);
+        while (row5 != null) {
+            Cell tempCell = row5.getCell(k);
+            row5.removeCell(tempCell);
+            j++;
+            row5 = sheet.getRow(j);
+        }
+        SimpleDateFormat f = new SimpleDateFormat("yyyy年MM月dd日HH时mm分");
+        String format = f.format(new Date());
+        String newFilename = "粘贴板-第一公司值班联系电话" + format + ".xlsx";
+        //上报总公司值班表
+        //String filepath = FileUtilTool.CreateFileName(newFilename);
+        String filepath=ReportUtil.GetInnerPostPath(ReportUtil.DutyPostEnum.粘贴板,endTime)
+                + newFilename;
+        OutputStream outputStream = new FileOutputStream(filepath);
+        workbooksb.write(outputStream);
+        String filepathpdf = filepath.replaceAll(".xlsx",".pdf");
+        convertPDF convertPDF = new convertPDF();
+        convertPDF.jacobExcelToPDF(filepath,filepathpdf);
+        outputStream.flush();
+        outputStream.close();
+        return filepath;// filepathpdf;
+
+    }
+    @GetMapping("/excel2")
+    @ApiOperation(value = "双十一值班")
+    public String generateJiaQiangExcel( String typeName, String startTime, String endTime) throws IOException, ParseException {
+        ArrayList<String> dates = datesService.GetDates(startTime, endTime);
+        int size = dates.size();
+        String[] t1 = dates.toArray(new String[size]);
+        dutypersonMapper.deleteInfo();
+        System.out.println("已删除旧表jieguo1,jieguo2");
+        dutypersonMapper.updateInfo1();
+        dutypersonMapper.updateInfo2();
+        for(int i = 0;i<size;i++){
+            dutypersonMapper.updateInfo3(t1[i]);
+        }
+        List<List<CellContent>> excelList = getDatajiaqiang(t1);
+        XSSFWorkbook workbook = null;
+        XSSFCellStyle style = null;
+        XSSFCellStyle style1 = null;
+        XSSFCellStyle style2 = null;
+        XSSFCellStyle style3 = null;
+        try {
+            workbook = new XSSFWorkbook("./src/main/resources/templates/excel/第一公司双十一值班联系电话.xlsx");
+            XSSFFont font =workbook.createFont();
+            font.setFontName("方正小标宋简体");
+            font.setFontHeightInPoints((short)20);
+            XSSFFont font1 =workbook.createFont();
+            font1.setFontName("宋体");
+            font1.setFontHeightInPoints((short)10);
+            //font.setBold(true);
+            XSSFFont font2 =workbook.createFont();
+            font2.setFontName("黑体");
+            font2.setFontHeightInPoints((short)10);
+            style = workbook.createCellStyle(); // 创建单元格样式
+            style1 = workbook.createCellStyle();
+            style2 = workbook.createCellStyle();
+            style3 = workbook.createCellStyle();
+            style.setFont(font1);
+            //方正小标宋style2
+            style2.setFont(font);
+            style1.setWrapText(true);  // 单元格内容折行
+            style1.setVerticalAlignment(VerticalAlignment.CENTER);
+            style1.setBorderBottom(BorderStyle.THIN);
+            style1.setBorderLeft(BorderStyle.THIN);
+            style1.setBorderRight(BorderStyle.THIN);
+            style1.setBorderTop(BorderStyle.THIN);
+            //style3 宋体10号
+            style3.setAlignment(HorizontalAlignment.CENTER);
+            style3.setVerticalAlignment(VerticalAlignment.CENTER);
+            style3.setVerticalAlignment(VerticalAlignment.CENTER);
+            style3.setBorderBottom(BorderStyle.THIN);
+            style3.setBorderLeft(BorderStyle.THIN);
+            style3.setBorderRight(BorderStyle.THIN);
+            style3.setBorderTop(BorderStyle.THIN);
+            style3.setFont(font2);
+            style2.setWrapText(true);  // 单元格内容折行
+            style2.setAlignment(HorizontalAlignment.CENTER);
+            style2.setVerticalAlignment(VerticalAlignment.CENTER);
+            style.setWrapText(true);  // 单元格内容折行
+            style.setAlignment(HorizontalAlignment.CENTER);
+            style.setVerticalAlignment(VerticalAlignment.CENTER);
+            style.setBorderBottom(BorderStyle.THIN);
+            style.setBorderLeft(BorderStyle.THIN);
+            style.setBorderRight(BorderStyle.THIN);
+            style.setBorderTop(BorderStyle.THIN);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        XSSFSheet sheet = workbook.getSheetAt(0);
+        int j = 3;
+        int n = 4;
+        int k = 0;
+        List<String> existList = new ArrayList<>();
+        for (List<CellContent> childList : excelList) {
+            Row row = sheet.getRow(j);
+            while (row != null&&j<48) {
+                Cell referCell = row.getCell(k);
+                referCell.setCellType(CellType.STRING);
+                if (referCell == null) {
+                    continue;
+                }
+                String reference = referCell.getStringCellValue();
+                String content = this.searchContent(childList, reference);
+                if (content == null) {
+                    j++;
+                    row = sheet.getRow(j);
+                    continue;
+                }
+                Cell cell = row.createCell(n);
+                cell.setCellStyle(style);
+                cell.setCellValue(content);
+                existList.add(reference);
+                j++;
+                row = sheet.getRow(j);
+            }
+            n++;
+            j = 3;
+        }
+        j=3;
+//删除参照列
+        Row row1 = sheet.getRow(j);
+        while (row1 != null&&j<48) {
+            Cell tempCell = row1.getCell(k);
+            row1.removeCell(tempCell);
+            j++;
+            row1 = sheet.getRow(j);
+        }
+        int hangshu =j;
+        //更改模板前两个日期行
+        j = 2;
+        n = 4;
+        int i = 0;//数组位移控制变量
+//更改日期
+        Row row2 = sheet.getRow(j);
+        String writedate = null;
+        while (i < t1.length) {
+            Cell tmpCell = row2.getCell(n);
+            if(tmpCell==null){
+                tmpCell = row2.createCell(n);
+            }
+            try {
+                writedate = datesService.getYearMonthDayWeeken(t1[i]);
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+            tmpCell.setCellValue(writedate);
+            tmpCell.setCellStyle(style3);
+            i++;
+            n++;
+        }
+       //首行
+        Row row3 = sheet.getRow(1);
+        Cell tmpCell = row3.getCell(1);
+        if (tmpCell == null) {
+            Cell cell = row3.createCell(1);
+            cell.setCellValue("第一公司双十一领导值班安排表 " + "\r\n" + "(" + t1[0] + "至" + t1[t1.length - 1] + ")");
+        } else
+            tmpCell.setCellValue("第一公司双十一领导值班安排表 " + "\r\n" + "(" + t1[0] + "至" + t1[t1.length - 1] + ")");
+        // 少于七天复制第二列到最后一列，删除多余列
+        j=1;
+        k=dates.size()+6;
+        //小于七天删除多余列
+        if(dates.size()<7) {
+            for (k = dates.size() + 4; k < 11; k++) {
+
+                j = 2;
+                Row row4 = sheet.getRow(j);
+                while (row4 != null&&j<48) {
+                    Cell tempCell = row4.getCell(k);
+                    row4.removeCell(tempCell);
+                    j++;
+                    row4 = sheet.getRow(j);
+                }
+            }
+        }
+        //大于七天设置字体大小
+        if(dates.size()>7) {
+            int m = 11;
+            row1 = sheet.getRow(1);
+            Cell tmpCellfont = row1.getCell(11);
+            while(tmpCellfont != null){
+                tmpCellfont = row1.getCell(m);
+                XSSFFont font = workbook.createFont();
+                font.setFontHeightInPoints((short)14);
+                m++;
+            }
+            for(m = 11; m < dates.size()+4;m++){
+                for(k = 2; k<hangshu; k++) {
+                    row1 = sheet.getRow(k);
+                    tmpCellfont = row1.getCell(m);
+                    if (tmpCellfont != null) {
+                        tmpCellfont.setCellStyle(style);
+                    } else {
+                        tmpCellfont = row1.createCell(m);
+                        tmpCellfont.setCellStyle(style);
+                    }
+                }
+            }
+        }
+
+        //合并第一行和最后一行
+        j=1;
+        k=dates.size()+3;
+        //第一行
+        CellRangeAddress cra = new CellRangeAddress(1,1,j,k);
+        sheet.addMergedRegion(cra);
+        row1 = sheet.getRow(1);
+        tmpCell = row1.getCell(j);
+        tmpCell.setCellStyle(style2);
+        //最后一行
+        j=1;
+        k=dates.size()+3;
+        CellRangeAddress cra1 = new CellRangeAddress(hangshu-1,hangshu-1,j,k);
+        row1 = sheet.getRow(hangshu-1);
+        sheet.addMergedRegion(cra1);
+        for(j=2;j<k;j++){
+            tmpCell = row1.getCell(j);
+            if(tmpCell == null){
+                tmpCell = row1.createCell(j);
+                tmpCell.setCellStyle(style);
+            }
+            else
+            tmpCell.setCellStyle(style);
+        }
+
+        SimpleDateFormat f = new SimpleDateFormat("yyyy年MM月dd日HH时mm分");
+        String format = f.format(new Date());
+        String newFilename = "第一公司双十一值班安排表" + format + ".xlsx";
+        String filepath=ReportUtil.GetInnerPostPath(ReportUtil.DutyPostEnum.双十一,endTime)
+                + newFilename;
+        OutputStream outputStream = new FileOutputStream(filepath);
+        workbook.write(outputStream);
+        String filepathpdf = filepath.replaceAll(".xlsx",".pdf");
+        convertPDF convertPDF = new convertPDF();
+        convertPDF.jacobExcelToPDF(filepath,filepathpdf);
+        outputStream.flush();
+        outputStream.close();
+        return filepath ;// filepathpdf;
+    }
+    @GetMapping("/excel3")
+    @ApiOperation(value = "“618”大促服务器部署表")
+    public String generate922Excel(  String typeName, String startTime) throws IOException, ParseException {
+
+        Date date = null;
+        try {
+            date = new SimpleDateFormat("yyyy-MM-dd").parse(startTime);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        String str = simpleDateFormat.format(date);
+        String  [] str1 = {str};
+        dutypersonMapper.deleteInfo();
+        System.out.println("已删除旧表jieguo1,jieguo2");
+        dutypersonMapper.updateInfo1();
+        dutypersonMapper.updateInfo2();
+        dutypersonMapper.updateInfo3(str);
+        getData922(str1);
+        XSSFWorkbook workbook =null;
+        XSSFCellStyle style = null;
+        XSSFCellStyle style1 = null;
+        XSSFRichTextString xrt = null;
+        try {
+            workbook = new XSSFWorkbook("./src/main/resources/templates/excel/第一公司“618”服务器部署及状态.xlsx");
+            style = workbook.createCellStyle(); // 创建单元格样式
+
+            Font font = workbook.createFont();
+            font.setFontName("宋体");
+            font.setColor(Font.COLOR_RED);
+            font.setFontHeightInPoints((short)11);
+            style.setFont(font);
+            style.setWrapText(true);  // 单元格内容折行
+            style.setAlignment(HorizontalAlignment.CENTER);
+            style.setBorderBottom(BorderStyle.THIN);
+            style.setBorderLeft(BorderStyle.THIN);
+            style.setBorderRight(BorderStyle.THIN);
+            style.setBorderTop(BorderStyle.THIN);
+            style.setVerticalAlignment(VerticalAlignment.CENTER);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        XSSFSheet sheet = workbook.getSheetAt(0);
+        int j = 4;
+        int n = 13;
+        int k = 0;
+        //写第一列单元格
+        List<String> existList = new ArrayList<>();
+        for (List<CellContent> childList : excelList1) {
+            System.out.println("excelList1.size():"+excelList1.size());
+            Row row = sheet.getRow(j);
+
+            while (row != null) {
+                Cell referCell = row.getCell(k);
+                referCell.setCellType(CellType.STRING);
+                String reference = referCell.getStringCellValue();
+                String content = this.searchContent(childList, reference);
+                if (content == null) {
+                    j++;
+                    row = sheet.getRow(j);
+                    continue;
+                }
+                Cell cell = row.createCell(n);
+                cell.setCellStyle(style);
+                cell.setCellValue(content);
+                existList.add(reference);
+                j++;
+                row = sheet.getRow(j);
+            }
+            n++;
+            j = 4;
+        }
+
+        //写第二列单元格
+        List<String> existList2 = new ArrayList<>();
+        for (List<CellContent> childList : excelList2) {
+            Row row = sheet.getRow(j);
+
+            while (row != null) {
+                Cell referCell = row.getCell(k);
+                referCell.setCellType(CellType.STRING);
+
+                if (referCell == null) {
+                    continue;
+                }
+
+                String reference = referCell.getStringCellValue();
+                String content = this.searchContent(childList, reference);
+                if (content == null) {
+                    j++;
+                    row = sheet.getRow(j);
+                    continue;
+                }
+                Cell cell = row.createCell(n);
+                cell.setCellStyle(style);
+                cell.setCellValue(content);
+                existList2.add(reference);
+                j++;
+                row = sheet.getRow(j);
+            }
+            n++;
+            j = 4;
+        }
+//删除参照列
+        Row row1 = sheet.getRow(j);
+        while (row1 != null) {
+            Cell tempCell = row1.getCell(k);
+            row1.removeCell(tempCell);
+            j++;
+            row1 = sheet.getRow(j);
+        }
+
+
+        style1 = workbook.createCellStyle(); // 创建单元格样式
+
+        Font font1 = workbook.createFont();
+        font1.setFontName("方正小标宋简体");
+        font1.setColor(Font.COLOR_RED);
+        font1.setFontHeightInPoints((short)22);
+
+        Font font2 = workbook.createFont();
+        font2.setFontName("方正小标宋简体");
+        font2.setFontHeightInPoints((short)22);
+
+        //首行
+        SimpleDateFormat simpleDateFormat1 = new SimpleDateFormat("MM月dd日");
+        String str2 = simpleDateFormat1.format(date);
+        j = 1;
+        Row row3 = sheet.getRow(j);
+        Cell tmpCell = row3.getCell(1);
+        if(tmpCell == null){//第一公司某日“xxx”大促服务器部署及状态总表
+            //tmpCell.setCellStyle(style1);
+            Cell cell =row3.createCell(1);//第一公司某日“xxx”大促服务器部署及状态总表
+            xrt = (XSSFRichTextString)workbook.getCreationHelper().createRichTextString("第一公司"+str2+"\"922\""+"服务器部署及状态总表");
+            xrt.applyFont(6,12,font1);
+            xrt.applyFont(12,xrt.length(),font2);
+            cell.setCellValue(xrt);
+        }
+        else{
+            //tmpCell.setCellStyle(style1);
+            xrt = (XSSFRichTextString)workbook.getCreationHelper().createRichTextString("第一公司"+str2+"\"922\""+"服务器部署及状态总表");
+            xrt.applyFont(6,12,font1);
+            xrt.applyFont(12,xrt.length(),font2);
+            tmpCell.setCellValue(xrt);
+        }
+
+
+        SimpleDateFormat f = new SimpleDateFormat("MM月dd日HH时mm分");
+        String format = f.format(new Date());
+
+        String newFilename = "第一公司618服务器部署及状态表"+format+".xlsx";
+
+
+        String filepath=ReportUtil.GetInnerPostPath(ReportUtil.DutyPostEnum._618任务,startTime)
+                + newFilename;
+        OutputStream outputStream = new FileOutputStream(filepath);
+        workbook.write(outputStream);
+        String filepathpdf = filepath.replaceAll(".xlsx",".pdf");
+        convertPDF convertPDF = new convertPDF();
+        convertPDF.jacobExcelToPDF(filepath,filepathpdf);
+        outputStream.flush();
+        outputStream.close();
+
+        return filepath;// filepathpdf;
+    }
+
+
+
+
+
+    @GetMapping("/excel5")
+    @ApiOperation(value = "公司信创子公司值班表")
+    public String generateXinTongExcel( String startTime, String endTime) throws IOException {
+
+        ArrayList<String> dates = datesService.GetDates(startTime, endTime);
+        int size = dates.size();
+        String[] t1 = dates.toArray(new String[size]);
+        dutypersonMapper.deleteInfo();
+        System.out.println("已删除旧表jieguo1,jieguo2");
+        dutypersonMapper.updateInfo1();
+        dutypersonMapper.updateInfo2();
+        for (int i = 0; i < size; i++) {
+            dutypersonMapper.updateInfo3(t1[i]);
+        }
+        List<List<CellContent>> excelList = getDataxintong(t1);
+        XSSFWorkbook workbook = null;
+        XSSFCellStyle style = null;
+        XSSFCellStyle style1 = null;
+        try {
+            workbook = new XSSFWorkbook("./src/main/resources/templates/excel/公司信创子公司值班表.xlsx");
+            style = workbook.createCellStyle(); // 创建单元格样式
+            style.setWrapText(true);  // 单元格内容折行
+            style.setAlignment(HorizontalAlignment.CENTER);
+            style.setBorderBottom(BorderStyle.THIN);
+            style.setBorderLeft(BorderStyle.THIN);
+            style.setBorderRight(BorderStyle.THIN);
+            style.setBorderTop(BorderStyle.THIN);
+
+
+
+
+            XSSFFont font1 =workbook.createFont();
+            font1.setFontName("仿宋");
+            font1.setFontHeightInPoints((short)11);
+
+
+            style1 = workbook.createCellStyle(); // 创建单元格样式
+            style1.setWrapText(true);  // 单元格内容折行
+            style1.setAlignment(HorizontalAlignment.CENTER);
+            style1.setVerticalAlignment(VerticalAlignment.CENTER);
+            style1.setBorderBottom(BorderStyle.THIN);
+            style1.setBorderLeft(BorderStyle.THIN);
+            style1.setBorderRight(BorderStyle.THIN);
+            style1.setBorderTop(BorderStyle.THIN);
+            style1.setFont(font1);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        XSSFSheet sheet = workbook.getSheetAt(0);
+        int j = 2;
+        int n = 2;
+        int k = 0;
+        List<String> existList = new ArrayList<>();
+        for (List<CellContent> childList : excelList) {
+            Row row = sheet.getRow(j);
+
+            while (row != null && j < 54) {
+                Cell referCell = row.getCell(k);
+
+                referCell.setCellType(CellType.STRING);
+
+                if (referCell == null) {
+                    continue;
+                }
+
+                String reference = referCell.getStringCellValue();
+                String content = this.searchContent(childList, reference);
+
+
+                if (content == null) {
+                    j++;
+                    row = sheet.getRow(j);
+                    continue;
+                }
+                Cell cell = row.createCell(n);
+                cell.setCellStyle(style);
+                cell.setCellValue(content);
+                existList.add(reference);
+                j++;
+                row = sheet.getRow(j);
+            }
+            n++;
+            j = 2;
+        }
+//删除参照列
+        Row row1 = sheet.getRow(j);
+        while (row1 != null && j < 55) {
+            Cell tempCell = row1.getCell(k);
+            row1.removeCell(tempCell);
+            j++;
+            row1 = sheet.getRow(j);
+        }
+        //更改模板前两个日期行
+        j = 1;
+        n = 2;
+        int i = 0;
+        SimpleDateFormat f = new SimpleDateFormat("MM月dd日HH时mm分");
+        String format = f.format(new Date());
+        String newFilename = "第一公司信创子公司值班联系电话表"+format+".xlsx";
+
+        Row row2 = sheet.getRow(j);
+        String writedate = null;
+        while (i < t1.length) {
+            Cell tmpCell = row2.getCell(n);
+            if(tmpCell==null){
+                tmpCell = row2.createCell(n);
+            }
+            try {
+                writedate = datesService.getYearMonthDayWeeken(t1[i]);
+
+                writedate.replaceAll("（","\r（");
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+            tmpCell.setCellValue(writedate);
+            tmpCell.setCellStyle(style1);
+            i++;
+            n++;
+        }
+        //首行
+        Row row3 = sheet.getRow(--j);
+        Cell tmpCell = row3.getCell(1);
+        if (tmpCell == null) {
+            Cell cell = row3.createCell(1);
+            cell.setCellValue("公司信创子公司值班表");
+        } else
+            tmpCell.setCellValue("公司信创子公司值班计划表");
+
+
+        String filepath= null;
+        try {
+            filepath = ReportUtil.GetInnerPostPath(ReportUtil.DutyPostEnum.信息创造,startTime)
+                    + newFilename;
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        OutputStream outputStream = new FileOutputStream(filepath);
+        workbook.write(outputStream);
+        String filepathpdf = filepath.replaceAll(".xlsx",".pdf");
+        convertPDF convertPDF = new convertPDF();
+        convertPDF.jacobExcelToPDF(filepath,filepathpdf);
+        outputStream.flush();
+        outputStream.close();
+        return filepath;
+    }
+
+    @GetMapping("/getexcelname")
+    @ApiOperation(value = "生成并获得文件名")
+    public String getexcelname(String type, String starttime,String endtime,
+                     HttpServletRequest request, HttpServletResponse response
+    ) throws ParseException, UnknownHostException ,IOException{
+        //上个方法,下载文件流
+        String filename="";
+        type=URLDecoder.decode(type==null? "":type);
+        switch (type){
+            /**
+             * 1
+             * 2
+             * 3
+             * 4
+             */
+            case "1":filename=generateRiChangExcel(starttime,endtime);break;
+            case "2":filename=generateshangbaoExcel(type,starttime,endtime);break;
+            case "3":filename= generate922Excel(type,starttime);break;
+            case "4":filename=generateJiaQiangExcel(type,starttime,endtime);break;
+            case "5":
+//            case "5": filename=getYiQing();
+            break;
+            default:System.out.println("getexcelname 未知类型:"+type);   break;
+        }
+        System.out.println("get excelname suc:"+type +"\t"+filename);
+        return filename;
+    }
+
+    @GetMapping("/down")
+    @ApiOperation(value = "下载(智能判断下载类型)", produces = "application/octet-stream")
+    public void down(String type, String starttime,String endtime,
+                     HttpServletRequest request, HttpServletResponse response
+                      ) throws ParseException, UnknownHostException ,IOException{
+        String filename=getexcelname(type,starttime,endtime,request,response);
+
+        if(filename!=null&&filename.length()>0) {
+             downloadFile(response, filename,true);//single tool
+        }
+    }
+
+    /** 下载文件方式方法,(最后一个参数是:是否复制文件到文档库里) (这里还判断了是否需要传pdf文件) */
+    void downloadFile(HttpServletResponse response, String filename ,Boolean copyToLibrary) throws IOException {
+        filename= URLDecoder.decode(filename);
+        log.info("static方法 下载文件流 文件：" + filename+ UtilTool.GetCurrentCodeLinePath());
+        File f=new File(filename);
+        if(!f.exists()) {
+            filename = FileUtilTool.Static_Server_Path + filename;
+            f = new File(filename);
+        }
+
+        //已经有库了,不在复制到库
+        if(filename.contains(FileUtilTool.Static_Server_Path_Library)){
+            copyToLibrary=false;
+        }
+
+        //输出文件名称,移除时间戳
+        String truefilename=f.getName().replaceFirst("[0-9]{11,14}_","");
+        if (copyToLibrary){
+            //如果需要复制文件到文档库
+            String sourceFullPath = f.getAbsolutePath();
+            try {
+
+                ReportUtil reportUtil=new ReportUtil(cgweekupreportDetectMapper);
+  
+                //如果类型=1,找pdf文件!
+                boolean isPdf=false;
+                if("1".equals(FileUtilTool.GetAboutSubmitType(sourceFullPath,dutypersonMapper))){
+                    int i=sourceFullPath.lastIndexOf('.');
+                    if(i>0){
+                        String pdfpath=sourceFullPath.substring(0,i)+".pdf";
+                        File pdf=new File(pdfpath);
+                        if(pdf.exists()){
+                            isPdf=true;
+                            log.info("拷贝pdf:"+pdfpath);
+                            //拷贝pdf
+                            String pdffilename=pdf.getName().replaceFirst("[0-9]{11,14}_","");
+                            String tarPdfFullPath = reportUtil.GetLibraryConfigPath(pdf.getParent()) + pdffilename;
+                            ReportUtil.mkdirs(tarPdfFullPath);
+                            FileUtilTool.CopyFile(pdfpath, tarPdfFullPath);
+                        }
+                    }
+                }
+
+                if(!isPdf) {
+                    String tarFullName = reportUtil.GetLibraryConfigPath(f.getParent()) + truefilename;
+                    ReportUtil.mkdirs(tarFullName);
+                    FileUtilTool.CopyFile(sourceFullPath, tarFullName);
+                }
+            }catch (Exception copyErr){
+                log.error("复制文件失败:" + sourceFullPath + copyErr.getMessage() + UtilTool.GetCurrentCodeLinePaths(5)+ copyErr.getStackTrace());
+            }
+        }
+
+        response.addHeader("Content-Disposition", "attachment;fileName=" + URLEncoder.encode(truefilename));
+        response.setContentType("application/force-download");
+        InputStream is=null;
+        OutputStream os= null;
+        try{
+            is=new FileInputStream(filename);
+            os=response.getOutputStream();
+            byte[] buffer=new byte[1024];
+            int length;
+            while((length=is.read(buffer))>0){
+                os.write(buffer,0,length);
+            }
+
+            //TODO 文件放置到里面一份
+        }catch (Exception ex){
+        }finally {
+            is.close();
+            os.flush();
+            os.close();
+        }
+    }
+
+
+
+
+
+
+
+    @GetMapping("/Library")
+    @ApiOperation(value = "文档库")
+    public Object Library(String path, HttpServletRequest request, HttpServletResponse response
+         ) throws ParseException, UnknownHostException ,IOException{
+        if(path==null){
+            path="";
+        }else if (path.length()>0){
+            path=URLDecoder.decode(path);
+        }
+        File f=new File(FileUtilTool.Static_Server_Path_Library+path);
+        if(f==null){
+            return "对应路径或文件不存在!";
+        }
+        if(f.isDirectory()) {
+            Map<String, Object> dir = new LinkedHashMap<>();
+            dir.put("this", f.getAbsolutePath());
+            dir.put("type", f.isFile() ? "file" : "<dir>");
+            dir.put("title",FileUtilTool.showLibraryInnerPath( f.getAbsolutePath() ));
+
+            List<Map<String, String>> sons = new LinkedList<>();
+            File[] files = f.listFiles();
+//            for (File _file : files) {
+//                Map<String, String> son = new LinkedHashMap<>();
+//                son.put("this", _file.getAbsolutePath());
+//                son.put("type", _file.isFile() ? "file" : "<dir>");
+//                sons.add(son);
+//            }
+//            dir.put("children", sons);
+//            return dir;
+
+            for (File _file : files) {
+                if(_file!=null) {
+                    Map<String, String> son = new LinkedHashMap<>();
+                    String _absoluteFileName = _file.getAbsolutePath();//error
+                    son.put("this", _absoluteFileName);
+                    son.put("title", FileUtilTool.showLibraryInnerPath(_absoluteFileName));
+                    son.put("type", _file.isFile() ? "file" : "<dir>");
+                    sons.add(son);
+                }
+            }
+            dir.put("children", sons);
+            List<Map> dirList=new LinkedList<>();
+            dirList.add(dir);
+            return  dirList;
+        }else { //if(f.isFile())
+            Map<String, Object> dir = new LinkedHashMap<>();
+            dir.put("this", f.getAbsolutePath());
+            dir.put("type",  "file");
+            dir.put("children", new LinkedList());
+            return dir;
+            //return f.getAbsolutePath();
+        }
+    }
+}
